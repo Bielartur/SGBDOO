@@ -138,9 +138,62 @@ def cadastrar_livro(db: BibliotecaDB) -> None:
 
     livro = Livro(novo_id, titulo, autor, isbn)
     db.salvar_livro(livro)
-    print('\033[32mLivro cadastrado com sucesso\033[0m')
+    print(verde('Livro cadastrado com sucesso'))
 
-def criar_emprestimo(db: BibliotecaDB):
+def editar_livros(db: BibliotecaDB) -> None:
+    print(amarelo('Escolha o livro que vai editar:'))
+    livros_disponiveis = ver_todos_livros(db, index=True)
+    
+    print('\n0 - Voltar')
+    valido = False
+    while not valido:
+        opcao = int(input('Resposta: '))
+        if opcao == 0:
+            return
+        elif opcao > len(livros_disponiveis) or opcao < 0:
+            print('Selecione uma opção válida')
+        else:
+            valido = True
+    
+    livro = livros_disponiveis[opcao - 1]
+
+    titulo = livro.titulo
+    autor = livro.autor
+    isbn = livro.isbn
+
+    print('Informações atuais:')
+    print(f'{verde('Título')}: {titulo}')
+    print(f'{azul('Autor')}: {autor}')
+    print(f'ISBN: {isbn}')
+
+    print('\nO que você quer editar:')
+    print('1 - Título')
+    print('2 - Autor')
+    print('3 - ISBN')
+    print('4 - Tudo')
+    print('\n0 - Voltar')
+
+    opcao = int(input('Resposta: '))
+
+    print('Editando:')
+    if opcao == 0:
+        return
+    elif opcao == 1:
+        titulo = input('Título: ')
+    elif opcao == 2:
+        autor = input('Autor: ')
+    elif opcao == 3:
+        isbn = input('ISBN: ')
+    elif opcao == 4:
+        titulo = input('Título: ')
+        autor = input('Autor: ')
+        isbn = input('ISBN: ')
+
+    livro_editado = Livro(livro.id, titulo, autor, isbn)
+    db.salvar_livro(livro_editado)
+    print(verde('Livro editado com sucesso'))
+
+def criar_emprestimo(db: BibliotecaDB) -> None:
     novo_id = identificar_novo_id(db, tipo='Empréstimo')
 
     numero_cartao = input('Número do cartão do usuário: ')
@@ -161,7 +214,7 @@ def criar_emprestimo(db: BibliotecaDB):
     sleep(1)
     print(verde('Empréstimo registrado com sucesso'))
 
-def ver_livros_disponiveis(db: BibliotecaDB, index=False):
+def ver_livros_disponiveis(db: BibliotecaDB, index=False) -> None:
     print("\nLivros disponíveis:")
     livros_disponiveis = db.listar_livros_disponiveis()
     if len(livros_disponiveis) == 0:
@@ -176,7 +229,22 @@ def ver_livros_disponiveis(db: BibliotecaDB, index=False):
 
     return livros_disponiveis
 
-def ver_emprestimos_ativos(db: BibliotecaDB):
+def ver_todos_livros(db: BibliotecaDB, index=False) -> None:
+    print("\nLivros disponíveis:")
+    livros_existentes = db.listar_livros_existentes()
+    if len(livros_existentes) == 0:
+        print('Nenhum livro cadastrado')
+    
+    if index:
+        for i, livro in enumerate(livros_existentes):
+            print(f"{i + 1} - {amarelo('Livro')}: {livro.titulo} - {azul(livro.autor)}")
+    else:
+        for livro in livros_existentes:
+            print(f"{amarelo('Livro')}: {livro.titulo} - {azul(livro.autor)}")
+
+    return livros_existentes
+
+def ver_emprestimos_ativos(db: BibliotecaDB) -> None:
     print("\nEmpréstimos ativos:")
     emprestimos_ativos = db.listar_emprestimos_ativos()
     if len(emprestimos_ativos) == 0:
@@ -258,10 +326,11 @@ def menu_funcionario(db: BibliotecaDB):
     while True:
         print('\nO que deseja fazer:')
         print('1 - Cadastrar livro')
-        print('2 - Criar empréstimo')
-        print('3 - Ver empréstimos ativos')
-        print('4 - Ver livros disponíveis')
-        print('5 - Voltar para o menu inicial')
+        print('2 - Editar Livro')
+        print('3 - Criar empréstimo')
+        print('4 - Ver empréstimos ativos')
+        print('5 - Ver livros disponíveis')
+        print('6 - Voltar para o menu inicial')
         print('0 - Sair')
 
         opcao = int(input('Resposta: '))
@@ -269,12 +338,14 @@ def menu_funcionario(db: BibliotecaDB):
         if opcao == 1:
             cadastrar_livro(db)
         elif opcao == 2:
-            criar_emprestimo(db)
+            editar_livros(db)
         elif opcao == 3:
-            ver_emprestimos_ativos(db)
+            criar_emprestimo(db)
         elif opcao == 4:
-            ver_livros_disponiveis(db)
+            ver_emprestimos_ativos(db)
         elif opcao == 5:
+            ver_livros_disponiveis(db)
+        elif opcao == 6:
             return
         elif opcao == 0:
             exit()
