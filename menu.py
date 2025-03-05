@@ -3,6 +3,7 @@ from biblioteca_db import BibliotecaDB
 import transaction
 
 from typing import Literal
+from time import sleep
 import os
 
 # Formatação de dados
@@ -14,6 +15,19 @@ def formatar_cpf(cpf: str) -> str:
 
     cpf = ''.join(cpf_separado)
     return cpf
+
+# Cores
+def amarelo(texto: str) -> str:
+    return f'\033[33m{texto}\033[0m'
+
+def verde(texto: str) -> str:
+    return f'\033[32m{texto}\033[0m'
+
+def vermelho(texto:str) -> str:
+    return f'\033[31m{texto}\033[0m'
+
+def azul(texto: str) -> str:
+    return f'\033[34m{texto}\033[0m'
 
 # Funcionalidades principais
 
@@ -29,7 +43,7 @@ def identificar_nova_matricula(db: BibliotecaDB, e_usuario: bool) -> str:
     
     num_nova_matricula = int(ultima_matricula[1:]) + 1
     
-    # Verifica se o número está entre 10 e 100
+    # Verifica quantos algarismos tem o número
     if num_nova_matricula / 100 >= 1:
         nova_matricula = primeira_letra + str(num_nova_matricula)
 
@@ -62,8 +76,8 @@ def cadastrar_usuario(db: BibliotecaDB) -> None:
 
     usuario = Usuario(novo_id, nome, cpf, email, nova_matricula)
     db.salvar_usuario(usuario)
-    print(f'IMPORTANTE: Sua matrícula é {nova_matricula}')
-    print('Usuário cadastrado com sucesso')
+    print(f'{amarelo('IMPORTANTE')}: Sua matrícula é {amarelo(nova_matricula)}')
+    print(verde('Usuário cadastrado com sucesso'))
 
 def cadastrar_funcionario(db: BibliotecaDB) -> None:
     novo_id = identificar_novo_id(db, tipo='Usuário')
@@ -76,19 +90,21 @@ def cadastrar_funcionario(db: BibliotecaDB) -> None:
 
     funcionario = Funcionario(novo_id, nome, cpf, email, nova_matricula, cargo)
     db.salvar_funcionario(funcionario)
-    print(f'IMPORTANTE: Sua matrícula é {nova_matricula}')
-    print('Funcionário cadastrado com sucesso')
+    print(f'{amarelo('IMPORTANTE')}: Sua matrícula é {amarelo(nova_matricula)}')
+    print(verde('Funcionário cadastrado com sucesso'))
     
 def logar_usuario(db: BibliotecaDB) -> bool:
     numero_cartao = input('Numero do cartão: ').upper()
     usuario = db.buscar_usuario_por_cartao(numero_cartao)
     if not usuario:
-        print(f'O usuário de número de cartão {numero_cartao} não existe')
+        print(f'O usuário de número de cartão {amarelo(numero_cartao)} não existe')
         return usuario, False
     
     cpf = formatar_cpf(input('CPF(apenas numeros): '))
     if usuario.cpf == cpf:
-        print('Usuário logado com sucesso')
+        print('Carregando...')
+        sleep(1)
+        print(verde('Usuário logado com sucesso'))
         return usuario, True
     else:
         print('CPF incorreto')
@@ -98,12 +114,14 @@ def logar_funcionario(db: BibliotecaDB) -> bool:
     matricula = input('Matricula: ').upper()
     funcionario = db.buscar_funcionario_por_matricula(matricula)
     if not funcionario:
-        print(f'O funcionário de matricula {matricula} não existe')
+        print(f'O funcionário de matricula {amarelo(matricula)} não existe')
         return funcionario, False
     
     cpf = formatar_cpf(input('CPF(apenas numeros): '))
     if funcionario.cpf == cpf:
-        print('Funcionário logado com sucesso')
+        print('Carregando...')
+        sleep(1)
+        print(verde('Funcionário logado com sucesso'))
         return funcionario, True
     else:
         print('CPF incorreto')
@@ -120,7 +138,7 @@ def cadastrar_livro(db: BibliotecaDB) -> None:
 
     livro = Livro(novo_id, titulo, autor, isbn)
     db.salvar_livro(livro)
-    print('Livro cadastrado com sucesso')
+    print('\033[32mLivro cadastrado com sucesso\033[0m')
 
 def criar_emprestimo(db: BibliotecaDB):
     novo_id = identificar_novo_id(db, tipo='Empréstimo')
@@ -128,7 +146,7 @@ def criar_emprestimo(db: BibliotecaDB):
     numero_cartao = input('Número do cartão do usuário: ')
     usuario = db.buscar_usuario_por_cartao(numero_cartao)
     if not usuario:
-        print(f'O usuário de número de cartão {numero_cartao} não existe')
+        print(f'O usuário de número de cartão {amarelo(numero_cartao)} não existe')
         return
 
     isbn = input('ISBN do livro: ')
@@ -139,7 +157,9 @@ def criar_emprestimo(db: BibliotecaDB):
     
     emprestimo = Emprestimo(novo_id, usuario, livro)
     db.salvar_emprestimo(emprestimo)
-    print('Empréstimo registrado com sucesso') 
+    print('Carregando...')
+    sleep(1)
+    print(verde('Empréstimo registrado com sucesso'))
 
 def ver_livros_disponiveis(db: BibliotecaDB, index=False):
     print("\nLivros disponíveis:")
@@ -149,11 +169,10 @@ def ver_livros_disponiveis(db: BibliotecaDB, index=False):
     
     if index:
         for i, livro in enumerate(livros_disponiveis):
-            print(f"{i + 1} - Livro: {livro.titulo} - {livro.autor}")
+            print(f"{i + 1} - {amarelo('Livro')}: {livro.titulo} - {azul(livro.autor)}")
     else:
         for livro in livros_disponiveis:
-            print(f"Livro: {livro.titulo} - {livro.autor}")
-
+            print(f"{amarelo('Livro')}: {livro.titulo} - {azul(livro.autor)}")
 
     return livros_disponiveis
 
@@ -163,7 +182,7 @@ def ver_emprestimos_ativos(db: BibliotecaDB):
     if len(emprestimos_ativos) == 0:
         print('Nenhum empréstimo ativo')
     for emp in emprestimos_ativos:
-        print(f"Empréstimo: Usuário={emp.usuario.nome}, Livro={emp.livro.titulo}")
+        print(f"Empréstimo: {verde('Usuário')}={emp.usuario.nome}, {amarelo('Livro')}={emp.livro.titulo}")
 
 def devolver_livro(db: BibliotecaDB, usuario: Usuario) -> None:
     print('\nDigite o número do empréstimo que quer devolver:')
@@ -175,7 +194,7 @@ def devolver_livro(db: BibliotecaDB, usuario: Usuario) -> None:
     for emp in emprestimos_ativos:
         if emp.usuario.numero_cartao == usuario.numero_cartao:
             emprestimos_desse_usuario.append(emp)
-            print(f"{i + 1} - Livro={emp.livro.titulo}, Autor={emp.livro.autor}")
+            print(f"{i + 1} - {amarelo('Livro')}={emp.livro.titulo}, {azul('Autor')}={emp.livro.autor}")
             i += 1
 
     print('\n0 - Voltar')
@@ -191,7 +210,7 @@ def devolver_livro(db: BibliotecaDB, usuario: Usuario) -> None:
     emprestimos_ativos[opcao - 1].livro.disponivel = True
     emprestimos_ativos[opcao - 1].devolvido = True
     transaction.commit()
-    print('Empréstimo devolvido')
+    print(verde('Empréstimo devolvido'))
 
 def pegar_livro_emprestado(db: BibliotecaDB, usuario: Usuario) -> None:
     novo_id = identificar_novo_id(db, tipo='Empréstimo')
@@ -211,7 +230,7 @@ def pegar_livro_emprestado(db: BibliotecaDB, usuario: Usuario) -> None:
 
     emprestimo = Emprestimo(novo_id, usuario, livro)
     db.salvar_emprestimo(emprestimo)
-    print('Empréstimo registrado com sucesso') 
+    print(verde('Empréstimo registrado com sucesso')) 
 
 def menu_usuario(db: BibliotecaDB, usuario: Usuario):
     while True:
