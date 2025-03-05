@@ -20,10 +20,12 @@ def formatar_cpf(cpf: str) -> str:
 def identificar_nova_matricula(db: BibliotecaDB, e_usuario: bool) -> str:
     if e_usuario:
         primeira_letra = 'U'
-        ultima_matricula = db.listar_usuarios()[-1].numero_cartao
+        usuarios = db.listar_usuarios()
+        ultima_matricula = usuarios[-1].numero_cartao if usuarios else 'U000'
     else:
         primeira_letra = 'F'
-        ultima_matricula = db.listar_funcionarios()[-1].matricula
+        funcionarios = db.listar_funcionarios()
+        ultima_matricula = funcionarios[-1].matricula if funcionarios else 'F000'
     
     num_nova_matricula = int(ultima_matricula[1:]) + 1
     
@@ -40,20 +42,15 @@ def identificar_nova_matricula(db: BibliotecaDB, e_usuario: bool) -> str:
     return nova_matricula
 
 def identificar_novo_id(db: BibliotecaDB, tipo: Literal['Livro', 'Empréstimo', 'Usuário', 'Funcionário']) -> int:
-
-    if tipo == 'Usuário':
-        ultimo_id = int(db.listar_usuarios()[-1].id)
-
-    elif tipo == 'Funcionário':
-        ultimo_id = int(db.listar_funcionarios()[-1].id)
-
-    elif tipo == 'Livro':
-        ultimo_id = int(db.listar_livros_existentes()[-1].id)
-
-    elif tipo == 'Empréstimo':
-        ultimo_id = int(db.listar_emprestimos_existentes()[-1].id)
-
+    listas = {
+        'Usuário': db.listar_usuarios(),
+        'Funcionário': db.listar_funcionarios(),
+        'Livro': db.listar_livros_existentes(),
+        'Empréstimo': db.listar_emprestimos_existentes(),
+    }
+    ultimo_id = listas[tipo][-1].id if listas[tipo] else 0
     return ultimo_id + 1
+
 
 def cadastrar_usuario(db: BibliotecaDB) -> None:
     novo_id = identificar_novo_id(db, tipo='Usuário')
@@ -216,109 +213,101 @@ def pegar_livro_emprestado(db: BibliotecaDB, usuario: Usuario) -> None:
     db.salvar_emprestimo(emprestimo)
     print('Empréstimo registrado com sucesso') 
 
+def menu_usuario(db: BibliotecaDB, usuario: Usuario):
+    while True:
+        print('\nO que deseja fazer:')
+        print('1 - Ver livros disponíveis')
+        print('2 - Devolver livro')
+        print('3 - Pegar livro emprestado')
+        print('4 - Voltar ao menu principal')
+        print('0 - Sair')
+
+        opcao = int(input('Resposta: '))
+
+        if opcao == 1:
+            ver_livros_disponiveis(db)
+        elif opcao == 2:
+            devolver_livro(db, usuario)
+        elif opcao == 3:
+            pegar_livro_emprestado(db, usuario)
+        elif opcao == 4:
+            return
+        elif opcao == 0:
+            exit()
+
+def menu_funcionario(db: BibliotecaDB):
+    while True:
+        print('\nO que deseja fazer:')
+        print('1 - Cadastrar livro')
+        print('2 - Criar empréstimo')
+        print('3 - Ver empréstimos ativos')
+        print('4 - Ver livros disponíveis')
+        print('5 - Voltar para o menu inicial')
+        print('0 - Sair')
+
+        opcao = int(input('Resposta: '))
+
+        if opcao == 1:
+            cadastrar_livro(db)
+        elif opcao == 2:
+            criar_emprestimo(db)
+        elif opcao == 3:
+            ver_emprestimos_ativos(db)
+        elif opcao == 4:
+            ver_livros_disponiveis(db)
+        elif opcao == 5:
+            return
+        elif opcao == 0:
+            exit()
+
 def menu():
     os.system('cls')
     db = BibliotecaDB()
 
     try:
-        opcao = 10
-        while opcao != 0:
-            opcao = int(input('\n1 - Fazer Login\n2 - Cadastrar-se\n0 - Sair\nResposta: '))
-            
+        while True:
+            print('\n1 - Fazer Login')
+            print('2 - Cadastrar-se')
+            print('0 - Sair')
+
+            opcao = int(input('Resposta: '))
+
             if opcao == 1:
                 print('\nFazer login como:')
-                opcao = int(input('1 - Usuário\n2 - Funcionário\n3 - Voltar\nResposta: '))
+                print('1 - Usuário')
+                print('2 - Funcionário')
+                print('3 - Voltar')
+
+                opcao = int(input('Resposta: '))
+
                 if opcao == 1:
                     usuario, logado = logar_usuario(db)
-
                     if logado:
-                        voltar = True
-                        while voltar:
-                            print('\nO que deseja fazer:')
-                            opcao = int(input('1 - Ver livros disponíveis\n2 - Devolver livro\n3 - Pegar livro emprestado\n4 - Voltar ao menu principal\n0 - Sair\nResposta: '))
-                            
-                            if opcao == 1:
-                                ver_livros_disponiveis(db)
-
-                            elif opcao == 2:
-                                devolver_livro(db, usuario)
-                                continue
-
-                            elif opcao == 3:
-                                pegar_livro_emprestado(db, usuario)
-                                continue
-
-                            elif opcao == 4:
-                                break
-
-                            elif opcao == 0:
-                                break
-
-                            if opcao in [1, 2]:
-                                    opcao = int(input('\n1 - Voltar\n0 - Sair\nResposta: '))
-
-                                    if opcao == 1:
-                                        voltar = True
-                                    else:
-                                        break
+                        menu_usuario(db, usuario)
 
                 elif opcao == 2:
                     funcionario, logado = logar_funcionario(db)
-
                     if logado:
-                        voltar = True
-                        while voltar:
-                            print('\nO que deseja fazer:')
-                            opcao = int(input('1 - Cadastrar livro\n2 - Criar empréstimo\n3 - Ver empréstimos ativos\n4 - Ver livros disponíveis\n5 - Voltar para o menu inicial\n0 - Sair\nResposta: '))
-
-                            if opcao == 0:
-                                break
-
-                            if opcao == 1:
-                                cadastrar_livro(db)
-
-                            elif opcao == 2:
-                                criar_emprestimo(db)
-
-                            elif opcao == 3:
-                                ver_emprestimos_ativos(db)
-                            
-                            elif opcao == 4:
-                                ver_livros_disponiveis(db)
-
-                            elif opcao == 5:
-                                break
-
-                            if opcao in [1, 2, 3, 4]:
-                                opcao = int(input('\n1 - Voltar\n0 - Sair\nResposta: '))
-
-                                if opcao == 1:
-                                    voltar = True
-                                else:
-                                    break
-                elif opcao == 3:
-                    continue
-                else:
-                    print('Selecione uma opção válida')
-                
+                        menu_funcionario(db)
 
             elif opcao == 2:
-                print('Cadastrar como:\n')
-                opcao = int(input('1 - Usuário\n2 - Funcionário\n3 - Voltar\nResposta: '))
+                print('\nCadastrar como:')
+                print('1 - Usuário')
+                print('2 - Funcionário')
+                print('3 - Voltar')
+
+                opcao = int(input('Resposta: '))
 
                 if opcao == 1:
                     cadastrar_usuario(db)
                 elif opcao == 2:
                     cadastrar_funcionario(db)
-                elif opcao == 3:
-                    continue
-                else:
-                    print('Selecione uma opção válida')
-            else:
-                print('Selecione uma opção válida')
 
+            elif opcao == 0:
+                exit()
     finally:
         db.fechar()
+
 
 if __name__ == '__main__':
     menu()
